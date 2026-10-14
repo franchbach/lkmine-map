@@ -49,6 +49,7 @@
   .navbtns a.am{background:#0f84ff}
   .navbtns a.bm{background:#2932e1}
   body.mobile .navbtns a{padding:10px 8px;font-size:14px}
+  .navnote{font-size:11px;color:#8a8a8a;margin-top:6px;line-height:1.55;border-top:1px dashed #eee;padding-top:6px}
   #hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(28,28,28,.86);color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;z-index:60;display:none;white-space:nowrap}
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;display:none;align-items:center;justify-content:center}
   #modal .box{background:#fff;border-radius:8px;padding:14px;width:440px;max-width:90%}
@@ -180,6 +181,7 @@ var map, iw, layerStd, layerSat, layerRoad, curBase='std', tempMarker=null, mode
 var shapeSel = {shape:'circle', color:C2};
 var pois = [];
 var _ua = navigator.userAgent || '';
+var IS_WX = /MicroMessenger/i.test(_ua);
 var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(_ua) || (/Macintosh/.test(_ua) && navigator.maxTouchPoints > 1) || (('ontouchstart' in window) && Math.min(screen.width, screen.height) <= 768);
 if(document.body) document.body.classList.add(IS_MOBILE ? 'mobile' : 'desktop');
 
@@ -442,12 +444,32 @@ function gcj02ToBd09(lng, lat){
   var th = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * Math.PI * 3000.0/180.0);
   return [+(z*Math.cos(th)+0.0065).toFixed(6), +(z*Math.sin(th)+0.006).toFixed(6)];
 }
-function navLinks(p){
+function amapWebUrl(p){
   var nm = p.name || '目的地';
-  var amap = 'https://uri.amap.com/navigation?to=' + (+p.lng).toFixed(6) + ',' + (+p.lat).toFixed(6) + ',' + encodeURIComponent(nm) + '&mode=car&policy=1&src=lkmine_map&coordinate=gaode&callnative=1';
+  return 'https://uri.amap.com/navigation?to=' + (+p.lng).toFixed(6) + ',' + (+p.lat).toFixed(6) + ',' + encodeURIComponent(nm) + '&mode=car&policy=1&src=lkmine_map&coordinate=gaode&callnative=1';
+}
+function baiduWebUrl(p){
+  var nm = p.name || '目的地';
   var bd = gcj02ToBd09(+p.lng, +p.lat);
-  var baidu = 'https://api.map.baidu.com/marker?location=' + bd[1] + ',' + bd[0] + '&title=' + encodeURIComponent(nm) + '&content=' + encodeURIComponent(p.loc || ('坐标 ' + bd[1] + ',' + bd[0])) + '&output=html&coord_type=bd09ll&zoom=14&src=webapp.lkmine_map';
-  return '<div class="navbtns"><a class="am" href="'+amap+'" target="_blank" rel="noopener">高德导航</a><a class="bm" href="'+baidu+'" target="_blank" rel="noopener">百度导航</a></div>';
+  return 'https://api.map.baidu.com/marker?location=' + bd[1] + ',' + bd[0] + '&title=' + encodeURIComponent(nm) + '&content=' + encodeURIComponent(p.loc || ('坐标 ' + bd[1] + ',' + bd[0])) + '&output=html&coord_type=bd09ll&zoom=14&src=webapp.lkmine_map';
+}
+function amapScheme(p){
+  var nm = p.name || '目的地';
+  var lat = (+p.lat).toFixed(6), lng = (+p.lng).toFixed(6);
+  if(/iPhone|iPad|iPod/i.test(_ua)) return 'iosamap://path?sourceApplication=lkmine_map&dlat=' + lat + '&dlon=' + lng + '&dname=' + encodeURIComponent(nm) + '&dev=0&t=0';
+  return 'amapuri://route/plan/?sourceApplication=lkmine_map&dlat=' + lat + '&dlon=' + lng + '&dname=' + encodeURIComponent(nm) + '&dev=0&t=0';
+}
+function baiduScheme(p){
+  var nm = p.name || '目的地';
+  var bd = gcj02ToBd09(+p.lng, +p.lat);
+  return 'baidumap://map/direction?destination=latlng:' + bd[1] + ',' + bd[0] + '|name:' + encodeURIComponent(nm) + '&coord_type=bd09ll&mode=driving&src=webapp.lkmine_map';
+}
+function navLinks(p){
+  return '<div class="navbtns">'
+    + '<a class="am" href="'+amapWebUrl(p)+'" target="_blank" rel="noopener" onclick="return __app.navGo(\'amap\',\''+p.id+'\')">高德导航</a>'
+    + '<a class="bm" href="'+baiduWebUrl(p)+'" target="_blank" rel="noopener" onclick="return __app.navGo(\'baidu\',\''+p.id+'\')">百度导航</a>'
+    + '</div>'
+    + (IS_WX ? '<div class="navnote">💡 微信内无法直接打开App（微信安全限制）：请点右上角 ⋯ → 在浏览器中打开，再点按钮即可直达高德/百度App导航</div>' : '');
 }
 function showInfo(p){
   var h = '<div style="font-size:13px;line-height:1.7;min-width:238px">'
@@ -659,7 +681,27 @@ window.__app = {
     if(curBase==='std'){ map.setLayers([layerSat, layerRoad]); $('btnBase').textContent='底图：卫星（点击切标准）'; curBase='sat'; }
     else { map.setLayers([layerStd]); $('btnBase').textContent='底图：标准（点击切卫星）'; curBase='std'; }
   },
-  saveAll: saveAll
+  saveAll: saveAll,
+  navGo: function(kind, id){
+    var p = state.points.find(function(x){ return x.id===id; });
+    if(!p) return true;
+    if(!IS_MOBILE || IS_WX) return true;   /* 桌面/微信内：走 href 网页版 */
+    var scheme = (kind==='amap') ? amapScheme(p) : baiduScheme(p);
+    var web    = (kind==='amap') ? amapWebUrl(p) : baiduWebUrl(p);
+    var gone = false;
+    var onHide = function(){ gone = true; };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('blur', onHide);
+    setTimeout(function(){
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('blur', onHide);
+      if(!gone && !document.hidden){ try{ window.location.href = web; }catch(e){} }   /* 没装App → 自动降级网页版 */
+    }, 2200);
+    try{ window.location.href = scheme; }catch(e){ window.location.href = web; }
+    return false;
+  }
 };
 
 /* ---------- 启动 ---------- */
