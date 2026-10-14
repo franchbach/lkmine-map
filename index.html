@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>绿矿矿山地图（包2·包6）</title>
+<style>
+  html,body{margin:0;height:100%;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  #map{position:absolute;inset:0;background:#e8e8e8}
+  .card{background:#fff;border-radius:9px;box-shadow:0 2px 10px rgba(0,0,0,.16);padding:10px 12px;margin-bottom:8px;font-size:13px;color:#222}
+  #panel{position:absolute;top:12px;left:12px;width:262px;z-index:30;max-height:calc(100% - 24px);overflow:auto}
+  #list{position:absolute;bottom:12px;left:12px;width:262px;z-index:30;max-height:46%;overflow:auto}
+  #legendbox{position:absolute;bottom:12px;right:12px;z-index:30;width:246px;font-size:12px;line-height:1.7}
+  .ttl{font-size:15px;font-weight:700}
+  .sub{font-size:12px;color:#666;margin-top:2px}
+  .btn{display:block;width:100%;margin:6px 0 0;padding:7px 10px;border:1px solid #d0d0d0;border-radius:6px;background:#fafafa;cursor:pointer;font-size:13px;text-align:left;font-family:inherit}
+  .btn:hover{background:#f0f6ff;border-color:#7aa7d9}
+  .btn.active{background:#e8f2ff;border-color:#2b7cd3;color:#1a5fb4;font-weight:700}
+  .row{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:7px}
+  .lab{font-size:12px;color:#666}
+  .sh{width:26px;height:26px;line-height:26px;text-align:center;border:1px solid #d0d0d0;border-radius:6px;cursor:pointer;font-size:15px;background:#fff}
+  .sh.active{border-color:#2b7cd3;background:#e8f2ff}
+  .sw{width:20px;height:20px;border-radius:50%;border:2px solid #fff;outline:1px solid #d0d0d0;cursor:pointer}
+  .sw.active{outline:2px solid #2b7cd3}
+  #q{flex:1;padding:6px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:13px;font-family:inherit;min-width:0}
+  #btnSearch{padding:6px 10px;border:1px solid #2b7cd3;background:#2b7cd3;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
+  #results{max-height:250px;overflow:auto;margin-top:6px}
+  #results .res{padding:6px 6px;border-bottom:1px solid #f0f0f0;cursor:pointer;position:relative}
+  #results .res:hover{background:#f4f8ff}
+  #results .rt{font-size:12.5px;font-weight:600;color:#222;padding-right:34px}
+  #results .rs{font-size:11.5px;color:#888;margin-top:1px}
+  #results .addb{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:1px solid #2b7cd3;background:#fff;color:#2b7cd3;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:12px}
+  #results .addb:hover{background:#2b7cd3;color:#fff}
+  .rmsg{color:#999;font-size:12px;padding:6px 2px}
+  .sect{font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#444}
+  .li{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed #f0f0f0}
+  .li .shp{display:flex;width:18px}
+  .li .nm{flex:1;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .li .nm:hover{color:#1a5fb4;text-decoration:underline}
+  .li .tag{font-size:10.5px;color:#fff;border-radius:3px;padding:1px 5px;background:#999;white-space:nowrap}
+  .tag.pkg2{background:#C0392B}.tag.pkg6{background:#1F5FA8}.tag.ct{background:#7f8c8d}
+  .mini{font-size:11.5px;color:#2b7cd3;cursor:pointer;white-space:nowrap}
+  .mini:hover{text-decoration:underline}
+  .mini.del{color:#c0392b}
+  .lbl{background:#fff;border:1.5px solid #999;border-radius:4px;padding:2px 8px;font-size:12.5px;color:#222;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:move;user-select:none;-webkit-user-select:none}
+  .mk{cursor:move;line-height:0}
+  #hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(28,28,28,.86);color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;z-index:60;display:none;white-space:nowrap}
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;display:none;align-items:center;justify-content:center}
+  #modal .box{background:#fff;border-radius:8px;padding:14px;width:440px;max-width:90%}
+  #modal textarea{width:100%;height:260px;font-size:12px;font-family:Consolas,monospace;box-sizing:border-box}
+  .mini-note{color:#888;font-size:11.5px;margin-top:4px;line-height:1.5}
+  /* ---------- 移动端 ---------- */
+  body.mobile #panel, body.mobile #list, body.mobile #legendbox{ display:none !important; }
+  #mtop{ display:none; position:fixed; top:0; left:0; right:0; z-index:50; padding:8px 10px; background:rgba(255,255,255,.96); box-shadow:0 1px 6px rgba(0,0,0,.15); }
+  body.mobile #mtop{ display:flex; gap:8px; }
+  #mtop input{ flex:1; padding:9px 12px; border:1px solid #d0d0d0; border-radius:8px; font-size:15px; font-family:inherit; min-width:0; }
+  #mtop button{ padding:9px 14px; border:1px solid #2b7cd3; background:#2b7cd3; color:#fff; border-radius:8px; font-size:15px; font-family:inherit; }
+  #mbar{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:50; background:rgba(255,255,255,.97); box-shadow:0 -1px 6px rgba(0,0,0,.15); padding:4px 2px calc(6px + env(safe-area-inset-bottom)); }
+  body.mobile #mbar{ display:flex; }
+  #mbar button{ flex:1; border:none; background:none; padding:5px 0 2px; font-size:11px; color:#444; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  #mbar button .ico{ font-size:21px; line-height:1.2; }
+  #mbar button.active{ color:#1a5fb4; font-weight:700; }
+  body.mobile #hint{ top:auto; bottom:84px; font-size:13px; max-width:92%; white-space:normal; text-align:center; }
+  body.mobile .lbl{ font-size:13px; padding:3px 9px; }
+  #msheet{ display:none; position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.35); }
+  #msheet.show{ display:block; }
+  #msheet .card-sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:14px 14px 0 0; max-height:74%; display:flex; flex-direction:column; }
+  #msheet .sheet-head{ padding:13px 16px; font-weight:700; font-size:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+  #msheet .sheet-head .x{ color:#888; font-weight:400; font-size:14px; }
+  #msheet .sheet-body{ overflow:auto; padding:6px 14px 46px; -webkit-overflow-scrolling:touch; }
+  #msheet .li{ padding:9px 0; font-size:14px; }
+  #msheet .mini{ font-size:13px; padding:4px 6px; }
+  #msheet .res{ padding:10px 4px; }
+  #msheet .addb{ padding:6px 14px; font-size:14px; }
+  #msheet .mbtn{ display:block; width:100%; text-align:center; margin:9px 0 0; padding:13px; border:1px solid #d0d0d0; border-radius:9px; background:#fafafa; font-size:15px; font-family:inherit; }
+  #mmodal{ display:none; position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.35); align-items:center; justify-content:center; }
+  #mmodal.show{ display:flex; }
+  #mmodal .mm-card{ background:#fff; border-radius:12px; width:min(92vw,430px); padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); }
+  #mmodal .mm-title{ font-size:15px; font-weight:700; margin-bottom:10px; }
+  #mmodal input{ width:100%; box-sizing:border-box; padding:10px 12px; font-size:15px; border:1px solid #d0d0d0; border-radius:8px; font-family:inherit; }
+  #mmodal .mm-row{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  #mmodal .mm-row .lab{ font-size:12px; color:#666; }
+  body.mobile #mmodal .sh{ width:34px; height:34px; line-height:34px; font-size:18px; }
+  body.mobile #mmodal .sw{ width:26px; height:26px; }
+  #mmodal .mm-btns{ display:flex; gap:10px; margin-top:16px; }
+  #mmodal .mm-btns button{ flex:1; padding:11px; font-size:15px; border-radius:8px; border:1px solid #d0d0d0; background:#fafafa; font-family:inherit; }
+  #mmodal .mm-btns .ok{ background:#2b7cd3; border-color:#2b7cd3; color:#fff; }
+  #mmodal .mm-btns .ok.danger{ background:#c0392b; border-color:#c0392b; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="panel">
+  <div class="card">
+    <div class="ttl">绿矿矿山地图 · 包2 / 包6</div>
+    <div class="sub">2026年绿色矿山第三方评估（高德底图）</div>
+  </div>
+  <div class="card">
+    <button id="btnAddPoint" class="btn">➕ 添加点位（点按钮后点击地图）</button>
+    <button id="btnAddLabel" class="btn">🏷️ 添加标签（点按钮后点击地图）</button>
+    <button id="btnRuler" class="btn">📏 测距（点两下地图画线）</button>
+    <div class="row"><span class="lab">形状</span>
+      <span class="sh active" data-sh="circle" title="圆点">●</span>
+      <span class="sh" data-sh="star" title="五角星">★</span>
+      <span class="sh" data-sh="triangle" title="三角形">▲</span>
+      <span class="sh" data-sh="square" title="方形">■</span>
+    </div>
+    <div class="row" id="colorRow"><span class="lab">颜色</span></div>
+  </div>
+  <div class="card">
+    <div class="row"><input id="q" placeholder="搜索地址 / 地名 / 矿山名，回车"><button id="btnSearch">搜索</button></div>
+    <div id="results"></div>
+  </div>
+  <div class="card">
+    <button id="btnBase" class="btn">底图：标准（点击切卫星）</button>
+    <button id="btnReset" class="btn">↺ 重置为初始8个矿</button>
+    <button id="btnClear" class="btn">🗑 清空全部点位与标签</button>
+    <button id="btnExport" class="btn">⤓ 导出 JSON（复制到剪贴板）</button>
+  </div>
+</div>
+
+<div id="list" class="card"></div>
+
+<div id="legendbox" class="card">
+  <b>图例</b><br>
+  ★＝委托评估对象　●＝2026年抽查对象<br>
+  <span style="color:#C0392B">红色＝包2（西部（重庆）地质科技创新研究院）</span><br>
+  <span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span>
+</div>
+
+<div id="mtop"><input id="mq" placeholder="搜索地址 / 矿山名…"><button id="msearch">搜索</button></div>
+<div id="mbar">
+  <button id="mAddPoint"><span class="ico">➕</span>点位</button>
+  <button id="mAddLabel"><span class="ico">🏷️</span>标签</button>
+  <button id="mRuler"><span class="ico">📏</span>测距</button>
+  <button id="mList"><span class="ico">📋</span>列表</button>
+  <button id="mMore"><span class="ico">⚙️</span>更多</button>
+</div>
+<div id="msheet"><div class="card-sheet"><div class="sheet-head"><span id="msheetTitle"></span><span class="x" id="msheetClose">✕ 关闭</span></div><div class="sheet-body" id="msheetBody"></div></div></div>
+<div id="mmodal"><div class="mm-card">
+  <div class="mm-title" id="mmTitle"></div>
+  <input id="mmInput" style="display:none">
+  <div class="mm-row" id="mmShapes" style="display:none"><span class="lab">形状</span></div>
+  <div class="mm-row" id="mmColors" style="display:none"><span class="lab">颜色</span></div>
+  <div class="mm-btns"><button id="mmCancel">取消</button><button id="mmOk" class="ok">确定</button></div>
+</div></div>
+
+<div id="hint"></div>
+<div id="modal"><div class="box"><div style="font-weight:700;margin-bottom:8px">导出数据（手动复制）</div><textarea id="modalTa"></textarea><button class="btn" style="text-align:center" onclick="document.getElementById('modal').style.display='none'">关闭</button></div></div>
+
+<script src="https://webapi.amap.com/maps?v=2.0&key=d1582d52329b5b3fd0b13bdac2a90d0a"></script>
+<script>
+'use strict';
+var KEY = 'd1582d52329b5b3fd0b13bdac2a90d0a';
+var LSKEY = 'lkmine_map_v1';
+var C2 = '#C0392B', C6 = '#1F5FA8';
+
+var INITIAL = [
+  {id:'m1', name:'二门村寨沟建筑石料用灰岩矿', lng:106.7725, lat:33.0295, shape:'star',  color:C2, pkg:'包2', typ:'委托评估',  company:'陕西交控汉中新材料有限公司', loc:'汉中市南郑区新集镇二门村', side:'r'},
+  {id:'m2', name:'蒋家河煤矿',                 lng:107.9328, lat:35.0063, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'彬县煤炭有限责任公司',       loc:'咸阳市彬州市', side:'l'},
+  {id:'m3', name:'大佛寺煤矿',                 lng:107.9658, lat:35.0738, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'陕西彬长大佛寺矿业有限公司', loc:'咸阳市彬州市城关街道', side:'ru'},
+  {id:'m4', name:'孟村煤矿',                   lng:107.9365, lat:35.1465, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'陕西彬长孟村矿业有限公司',   loc:'咸阳市长武县', side:'lu'},
+  {id:'m5', name:'陕南石棉矿',                 lng:106.2740, lat:33.1760, shape:'star',  color:C6, pkg:'包6', typ:'委托评估',  company:'陕西天宝矿业有限公司',       loc:'汉中市宁强县大安镇黑木林村', side:'r'},
+  {id:'m6', name:'阴湾水泥用石灰岩矿',         lng:107.1148, lat:34.5570, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'宝鸡市众喜金陵河水泥有限公司', loc:'宝鸡市陈仓区县功镇', side:'l'},
+  {id:'m7', name:'草山灰岩矿',                 lng:107.9847, lat:34.5592, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'冀东海德堡（扶风）水泥有限公司', loc:'宝鸡市扶风县天度镇闫马村北', side:'ru'},
+  {id:'m8', name:'高家堡煤矿',                 lng:107.8245, lat:35.2675, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'陕西正通煤业有限责任公司',   loc:'咸阳市长武县彭公镇', side:'u'}
+];
+
+var PALETTE = ['#C0392B','#1F5FA8','#E67E22','#27AE60','#8E44AD','#16A085','#D4A017','#333333'];
+var state = {points:[], labels:[], measures:[], seq:100};
+var markers = new Map();     // pointId -> {marker, label}
+var labelMks = new Map();    // labelId -> marker
+var map, iw, layerStd, layerSat, layerRoad, curBase='std', tempMarker=null, mode=null;
+var shapeSel = {shape:'circle', color:C2};
+var pois = [];
+var _ua = navigator.userAgent || '';
+var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(_ua) || (/Macintosh/.test(_ua) && navigator.maxTouchPoints > 1) || (('ontouchstart' in window) && Math.min(screen.width, screen.height) <= 768);
+if(document.body) document.body.classList.add(IS_MOBILE ? 'mobile' : 'desktop');
+
+function $(id){ return document.getElementById(id); }
+function hint(msg, ms){ var h=$('hint'); h.textContent=msg; h.style.display='block'; clearTimeout(h._t); h._t=setTimeout(function(){h.style.display='none';}, ms||2200); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ---------- 弹窗 / 抽屉（替代 prompt/confirm，兼容手机与微信） ---------- */
+var _uiOnOk = null;
+function uiAsk(opts){
+  opts = opts || {};
+  $('mmTitle').textContent = opts.title || '';
+  var inp = $('mmInput');
+  if(opts.input === false){ inp.style.display = 'none'; }
+  else { inp.style.display = 'block'; inp.value = (opts.value || ''); inp.placeholder = opts.placeholder || ''; }
+  var sh = $('mmShapes'), co = $('mmColors');
+  sh.style.display = opts.withShapes ? 'flex' : 'none';
+  co.style.display = opts.withColors ? 'flex' : 'none';
+  if(opts.withShapes){
+    while(sh.children.length > 1) sh.removeChild(sh.lastChild);
+    [['circle','●'],['star','★'],['triangle','▲'],['square','■']].forEach(function(p){
+      var s = document.createElement('span'); s.className = 'sh' + (shapeSel.shape===p[0] ? ' active' : ''); s.textContent = p[1];
+      s.addEventListener('click', function(){
+        Array.prototype.forEach.call(sh.querySelectorAll('.sh'), function(x){ x.classList.remove('active'); });
+        s.classList.add('active'); shapeSel.shape = p[0];
+      });
+      sh.appendChild(s);
+    });
+  }
+  if(opts.withColors){
+    while(co.children.length > 1) co.removeChild(co.lastChild);
+    PALETTE.forEach(function(c){
+      var s = document.createElement('span'); s.className = 'sw' + (shapeSel.color===c ? ' active' : ''); s.style.background = c;
+      s.addEventListener('click', function(){
+        Array.prototype.forEach.call(co.querySelectorAll('.sw'), function(x){ x.classList.remove('active'); });
+        s.classList.add('active'); shapeSel.color = c;
+      });
+      co.appendChild(s);
+    });
+  }
+  var ok = $('mmOk');
+  ok.textContent = opts.okText || '确定';
+  ok.className = 'ok' + (opts.danger ? ' danger' : '');
+  _uiOnOk = function(){ var v = inp.value; if(opts.onOk) opts.onOk(v); };
+  $('mmodal').classList.add('show');
+  if(opts.input !== false && !IS_MOBILE){ setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60); }
+}
+function uiConfirm(msg, onOk, okText){
+  uiAsk({ title: msg, input: false, onOk: onOk, okText: okText || '确定', danger: true });
+}
+function uiClose(){ $('mmodal').classList.remove('show'); _uiOnOk = null; }
+function sheetOpen(title, html){
+  $('msheetTitle').textContent = title;
+  $('msheetBody').innerHTML = html;
+  $('msheet').classList.add('show');
+}
+function sheetClose(){ $('msheet').classList.remove('show'); }
+function showMobileList(){
+  var h = '';
+  function rows(list, pkgName){
+    h += '<div class="sect">' + pkgName + '（' + list.length + '）</div>';
+    if(!list.length){ h += '<div class="rmsg">（无）</div>'; return; }
+    list.forEach(function(p){
+      h += '<div class="li">' + svgShape(p.shape, p.color, 18)
+        + '<span class="nm" onclick="__app.locate(\'' + p.id + '\');sheetClose();">' + esc(p.name || '(未命名)') + '</span>'
+        + '<span class="tag ' + (p.pkg==='包2'?'pkg2':(p.pkg==='包6'?'pkg6':'ct')) + '">' + esc(p.typ || '') + '</span>'
+        + '<a class="mini" href="javascript:void(0)" onclick="__app.ren(\'' + p.id + '\')">✎</a>'
+        + '<a class="mini" href="javascript:void(0)" onclick="__app.locate(\'' + p.id + '\');sheetClose();">定位</a>'
+        + '<a class="mini del" href="javascript:void(0)" onclick="__app.del(\'' + p.id + '\')">✕</a></div>';
+    });
+  }
+  rows(state.points.filter(function(p){ return p.pkg==='包2'; }), '包2');
+  rows(state.points.filter(function(p){ return p.pkg==='包6'; }), '包6');
+  rows(state.points.filter(function(p){ return p.pkg!=='包2' && p.pkg!=='包6'; }), '自定义点位');
+  var free = state.labels.filter(function(l){ return !l.pid; });
+  h += '<div class="sect">独立标签（' + free.length + '）</div>';
+  if(!free.length) h += '<div class="rmsg">（无）</div>';
+  free.forEach(function(l){
+    h += '<div class="li"><span class="nm">🏷️ ' + esc(l.text) + '</span>'
+      + '<a class="mini" href="javascript:void(0)" onclick="__app.locateLabel(\'' + l.id + '\');sheetClose();">定位</a>'
+      + '<a class="mini del" href="javascript:void(0)" onclick="__app.delLabel(\'' + l.id + '\')">✕</a></div>';
+  });
+  var msrs = state.measures;
+  h += '<div class="sect">测距线（' + msrs.length + '）</div>';
+  if(!msrs.length) h += '<div class="rmsg">（无）</div>';
+  msrs.forEach(function(mx){
+    h += '<div class="li"><span class="nm">📏 ≈ ' + fmtDist(haversine(mx.a[0], mx.a[1], mx.b[0], mx.b[1])) + '</span>'
+      + '<a class="mini" href="javascript:void(0)" onclick="__app.locateMeasure(\'' + mx.id + '\');sheetClose();">定位</a>'
+      + '<a class="mini del" href="javascript:void(0)" onclick="__app.delMeasure(\'' + mx.id + '\')">✕</a></div>';
+  });
+  sheetOpen('点位 / 标签 / 测距线', h);
+}
+function showMobileMore(){
+  var base = (curBase === 'std') ? '底图：标准（点击切卫星）' : '底图：卫星（点击切标准）';
+  var h = '<button class="mbtn" onclick="__app.toggleBase(); this.textContent=(curBase===\'sat\'?\'底图：卫星（点击切标准）\':\'底图：标准（点击切卫星）\');">' + base + '</button>'
+    + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始8个矿</button>'
+    + '<button class="mbtn" onclick="__app.clearAll(); sheetClose();">🗑 清空全部点位、标签、测距线</button>'
+    + '<button class="mbtn" onclick="__app.exportJSON(); sheetClose();">⤓ 导出 JSON（复制）</button>'
+    + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估对象　●＝2026年抽查对象<br><span style="color:#C0392B">红色＝包2（西部（重庆）地质科技创新研究院）</span><br><span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span></div>';
+  sheetOpen('更多', h);
+}
+
+function svgShape(shape, color, size){
+  var c = size/2, inner='';
+  if(shape==='square'){
+    inner = '<rect x="'+(size*0.17)+'" y="'+(size*0.17)+'" width="'+(size*0.66)+'" height="'+(size*0.66)+'" rx="2.5" fill="'+color+'" stroke="#fff" stroke-width="2.2"/>';
+  } else if(shape==='triangle'){
+    inner = '<polygon points="'+c+','+(size*0.13)+' '+(size*0.88)+','+(size*0.85)+' '+(size*0.12)+','+(size*0.85)+'" fill="'+color+'" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>';
+  } else if(shape==='star'){
+    var R=size*0.47, r=R*0.42, pts=[];
+    for(var i=0;i<10;i++){ var a=-Math.PI/2+i*Math.PI/5, rad=(i%2===0)?R:r; pts.push((c+rad*Math.cos(a)).toFixed(1)+','+(c+rad*Math.sin(a)).toFixed(1)); }
+    inner = '<polygon points="'+pts.join(' ')+'" fill="'+color+'" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>';
+  } else {
+    inner = '<circle cx="'+c+'" cy="'+c+'" r="'+(size*0.33)+'" fill="'+color+'" stroke="#fff" stroke-width="2.2"/>';
+  }
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">'+inner+'</svg>';
+}
+
+/* ---------- 保存 / 读取 ---------- */
+function saveAll(){
+  try{
+    var data = {
+      points: state.points.map(function(p){ return {id:p.id,name:p.name,lng:p.lng,lat:p.lat,shape:p.shape,color:p.color,pkg:p.pkg||'',typ:p.typ||'',company:p.company||'',loc:p.loc||'',side:p.side||'r'}; }),
+      labels: state.labels.map(function(l){ return {id:l.id,pid:l.pid||null,text:l.text,lng:l.lng,lat:l.lat,side:l.side||'r',color:l.color||null,ox:(l.ox===undefined?null:l.ox),oy:(l.oy===undefined?null:l.oy)}; }),
+      measures: state.measures.map(function(m){ return {id:m.id, a:m.a, b:m.b}; }),
+      seq: state.seq
+    };
+    localStorage.setItem(LSKEY, JSON.stringify(data));
+  }catch(e){}
+}
+
+/* ---------- 创建覆盖物 ---------- */
+function createLabelMarker(l){
+  if(labelMks.has(l.id)) return labelMks.get(l.id);
+  var el = document.createElement('div');
+  el.className='lbl'; el.textContent=l.text;
+  if(l.color) el.style.borderColor=l.color;
+  el.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  var mk = new AMap.Marker({position:[l.lng,l.lat], content:el, anchor:'center', draggable:true, zIndex:210, cursor:'move'});
+  map.add(mk);
+  mk.on('dragend', function(){
+    var ll=mk.getPosition(); l.lng=+ll.lng.toFixed(6); l.lat=+ll.lat.toFixed(6);
+    l.ox=0; l.oy=0; mk.setOffset(new AMap.Pixel(0,0));
+    saveAll();
+  });
+  var applyOffset = function(){
+    var dx=0, dy=0;
+    if(l.ox!==undefined && l.ox!==null){ dx=l.ox; dy=(l.oy||0); }
+    else{
+      var w=el.offsetWidth||120, hh=el.offsetHeight||22, s=l.side||'r';
+      if(s==='r'){ dx=w/2+22; } else if(s==='l'){ dx=-(w/2+22); } else if(s==='ru'){ dx=w/2+22; dy=-(hh/2+12); } else if(s==='lu'){ dx=-(w/2+22); dy=-(hh/2+12); } else if(s==='u'){ dy=-(hh/2+18); } else if(s==='d'){ dy=hh/2+18; }
+    }
+    mk.setOffset(new AMap.Pixel(dx,dy));
+  };
+  mk._reoff = applyOffset;
+  setTimeout(applyOffset,80);
+  labelMks.set(l.id, mk);
+  return mk;
+}
+
+function addPoint(p, silent){
+  if(!p.id) p.id='p'+(state.seq++);
+  if(!state.points.some(function(x){return x.id===p.id;})) state.points.push(p);
+  var el = document.createElement('div');
+  el.className='mk'; el.innerHTML = svgShape(p.shape, p.color, 26);
+  var mk = new AMap.Marker({position:[p.lng,p.lat], content:el, anchor:'center', draggable:true, zIndex:120, cursor:'move'});
+  map.add(mk);
+  mk.on('dragend', function(){ var ll=mk.getPosition(); p.lng=+ll.lng.toFixed(6); p.lat=+ll.lat.toFixed(6); saveAll(); });
+  mk.on('click', function(){ showInfo(p); });
+  var lb=null;
+  state.labels.forEach(function(l){ if(l.pid===p.id) lb=l; });
+  if(!lb && p.name){
+    lb = {id:'l'+(state.seq++), pid:p.id, text:p.name, lng:p.lng, lat:p.lat, side:p.side||'r', color:p.color};
+    state.labels.push(lb);
+  }
+  var lmk = lb ? createLabelMarker(lb) : null;
+  markers.set(p.id, {marker:mk, label:lmk});
+  if(!silent){ saveAll(); renderList(); }
+  return mk;
+}
+
+function addLabel(l, silent){
+  if(!l.id) l.id='l'+(state.seq++);
+  l.pid = l.pid || null; l.side = l.side||'r';
+  state.labels.push(l);
+  createLabelMarker(l);
+  if(!silent){ saveAll(); renderList(); }
+}
+
+/* ---------- 测距 ---------- */
+var pendingA = null;
+
+function haversine(lng1, lat1, lng2, lat2){
+  var R = 6371008.8;
+  var p1 = lat1*Math.PI/180, p2 = lat2*Math.PI/180;
+  var dp = p2-p1, dl = (lng2-lng1)*Math.PI/180;
+  var h = Math.sin(dp/2)*Math.sin(dp/2) + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return 2*R*Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function fmtDist(m){
+  if(m < 1000) return Math.round(m) + ' 米';
+  if(m < 10000) return (m/1000).toFixed(2) + ' 公里';
+  return (m/1000).toFixed(1) + ' 公里';
+}
+function clearPendingA(){
+  if(pendingA && pendingA._mk){ map.remove(pendingA._mk); }
+  pendingA = null;
+}
+function createEndpointMarker(lng, lat, m, which){
+  var el = document.createElement('div');
+  el.className = 'mk';
+  el.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.5" fill="#E67E22" stroke="#fff" stroke-width="2.5" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"/></svg>';
+  var mk = new AMap.Marker({position:[lng,lat], content:el, anchor:'center', draggable:true, zIndex:160, cursor:'move'});
+  map.add(mk);
+  mk.on('dragging', function(){ var ll = mk.getPosition(); if(which==='a'){ m.a = [+ll.lng, +ll.lat]; } else { m.b = [+ll.lng, +ll.lat]; } refreshMeasure(m); });
+  mk.on('dragend', function(){ var ll = mk.getPosition(); if(which==='a'){ m.a = [+ll.lng.toFixed(6), +ll.lat.toFixed(6)]; } else { m.b = [+ll.lng.toFixed(6), +ll.lat.toFixed(6)]; } refreshMeasure(m); saveAll(); });
+  return mk;
+}
+function refreshMeasure(m){
+  if(!m._poly) return;
+  m._poly.setPath([m.a, m.b]);
+  var mid = [(m.a[0]+m.b[0])/2, (m.a[1]+m.b[1])/2];
+  m._lbl.setPosition(mid);
+  var el = m._lbl.getContent();
+  if(el && el.nodeType===1) el.textContent = '≈ ' + fmtDist(haversine(m.a[0], m.a[1], m.b[0], m.b[1]));
+}
+function showMeasureInfo(m){
+  var d = haversine(m.a[0], m.a[1], m.b[0], m.b[1]);
+  var h = '<div style="font-size:13px;line-height:1.7;min-width:190px">'
+    + '<b>📏 测距 ≈ ' + fmtDist(d) + '</b><br>直线距离（球面）<br>拖动两端橙色圆点可调整'
+    + '<br><a href="javascript:void(0)" onclick="__app.delMeasure(\'' + m.id + '\')" style="color:#c0392b">删除此测距线</a></div>';
+  iw.setContent(h);
+  iw.open(map, [(m.a[0]+m.b[0])/2, (m.a[1]+m.b[1])/2]);
+}
+function removeMeasureGraphics(m){
+  if(m._poly){ map.remove(m._poly); m._poly=null; }
+  if(m._mkA){ map.remove(m._mkA); m._mkA=null; }
+  if(m._mkB){ map.remove(m._mkB); m._mkB=null; }
+  if(m._lbl){ map.remove(m._lbl); m._lbl=null; }
+}
+function buildMeasure(m, silent){
+  if(!m.id) m.id = 'r'+(state.seq++);
+  if(!state.measures.some(function(x){ return x.id===m.id; })) state.measures.push(m);
+  m._poly = new AMap.Polyline({path:[m.a, m.b], strokeColor:'#E67E22', strokeWeight:4, strokeOpacity:0.95, lineJoin:'round', zIndex:150, cursor:'move'});
+  map.add(m._poly);
+  m._mkA = createEndpointMarker(m.a[0], m.a[1], m, 'a');
+  m._mkB = createEndpointMarker(m.b[0], m.b[1], m, 'b');
+  var el = document.createElement('div');
+  el.className = 'lbl'; el.style.borderColor = '#E67E22'; el.style.fontWeight = '700';
+  m._lbl = new AMap.Marker({position:[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2], content: el, anchor:'center', offset:new AMap.Pixel(0,-16), zIndex:215});
+  map.add(m._lbl);
+  refreshMeasure(m);
+  m._poly.on('click', function(){ showMeasureInfo(m); });
+  if(!silent){ saveAll(); renderList(); }
+  return m;
+}
+
+function showInfo(p){
+  var h = '<div style="font-size:13px;line-height:1.7;min-width:210px">'
+    + '<b>'+esc(p.name||'(未命名)')+'</b> '+(p.pkg?('<span style="color:#fff;background:'+(p.color||'#888')+';border-radius:3px;padding:0 5px;font-size:11px">'+esc(p.pkg)+'</span>'):'')
+    + '<br>类型：'+esc(p.typ||'-')
+    + '<br>单位：'+esc(p.company||'-')
+    + '<br>位置：'+esc(p.loc||'-')
+    + '<br>坐标：'+p.lng.toFixed(5)+', '+p.lat.toFixed(5)
+    + '<br><a href="javascript:void(0)" onclick="__app.del(\''+p.id+'\')" style="color:#c0392b">删除该点位</a>'
+    + '</div>';
+  iw.setContent(h);
+  iw.open(map, [p.lng,p.lat]);
+}
+
+/* ---------- 列表 ---------- */
+function renderList(){
+  var box = $('list'), h='';
+  function rows(list, pkgName, cls){
+    h += '<div class="sect">'+pkgName+'（'+list.length+'）</div>';
+    if(!list.length){ h += '<div class="rmsg">（无）</div>'; return; }
+    list.forEach(function(p){
+      h += '<div class="li">'
+        + '<span class="shp">'+svgShape(p.shape,p.color,16)+'</span>'
+        + '<span class="nm" title="点击定位" onclick="__app.locate(\''+p.id+'\')">'+esc(p.name||'(未命名)')+'</span>'
+        + '<span class="tag '+cls+'">'+esc(p.typ||'')+'</span>'
+        + '<a class="mini" href="javascript:void(0)" onclick="__app.ren(\''+p.id+'\')">✎</a>'
+        + '<a class="mini" href="javascript:void(0)" onclick="__app.locate(\''+p.id+'\')">定位</a>'
+        + '<a class="mini del" href="javascript:void(0)" onclick="__app.del(\''+p.id+'\')">✕</a>'
+      + '</div>';
+    });
+  }
+  rows(state.points.filter(function(p){return p.pkg==='包2';}), '包2', 'pkg2');
+  rows(state.points.filter(function(p){return p.pkg==='包6';}), '包6', 'pkg6');
+  rows(state.points.filter(function(p){return p.pkg!=='包2'&&p.pkg!=='包6';}), '自定义点位', 'ct');
+  var free = state.labels.filter(function(l){return !l.pid;});
+  h += '<div class="sect">独立标签（'+free.length+'）</div>';
+  if(!free.length){ h += '<div class="rmsg">（无）</div>'; }
+  free.forEach(function(l){
+    h += '<div class="li"><span class="nm" style="cursor:default">🏷️ '+esc(l.text)+'</span>'
+      + '<a class="mini" href="javascript:void(0)" onclick="__app.locateLabel(\''+l.id+'\')">定位</a>'
+      + '<a class="mini del" href="javascript:void(0)" onclick="__app.delLabel(\''+l.id+'\')">✕</a></div>';
+  });
+  var msrs = state.measures;
+  h += '<div class="sect">测距线（'+msrs.length+'）</div>';
+  if(!msrs.length){ h += '<div class="rmsg">（无）</div>'; }
+  msrs.forEach(function(m){
+    h += '<div class="li"><span class="nm" style="cursor:default">📏 ≈ '+fmtDist(haversine(m.a[0],m.a[1],m.b[0],m.b[1]))+'</span>'
+      + '<a class="mini" href="javascript:void(0)" onclick="__app.locateMeasure(\''+m.id+'\')">定位</a>'
+      + '<a class="mini del" href="javascript:void(0)" onclick="__app.delMeasure(\''+m.id+'\')">✕</a></div>';
+  });
+  box.innerHTML = h;
+}
+
+/* ---------- 数据初始化 ---------- */
+function initData(){
+  markers.forEach(function(o){ map.remove(o.marker); if(o.label) map.remove(o.label); });
+  markers.clear(); labelMks.clear();
+  if(state.measures){ state.measures.forEach(removeMeasureGraphics); }
+  state = {points:[], labels:[], measures:[], seq:100};
+  var saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(LSKEY)); }catch(e){}
+  if(saved && ((saved.points||[]).length + (saved.labels||[]).length + (saved.measures||[]).length > 0)){
+    state.points = saved.points||[]; state.labels = saved.labels||[]; state.measures = saved.measures||[]; state.seq = saved.seq||100;
+  } else {
+    INITIAL.forEach(function(m){
+      var p = JSON.parse(JSON.stringify(m));
+      state.points.push(p);
+      state.labels.push({id:'l'+(state.seq++), pid:p.id, text:p.name, lng:p.lng, lat:p.lat, side:p.side||'r', color:p.color});
+    });
+  }
+  state.points.forEach(function(p){ addPoint(p, true); });
+  state.labels.forEach(function(l){ createLabelMarker(l); });
+  state.measures.forEach(function(m){ buildMeasure(m, true); });
+  renderList();
+}
+
+/* ---------- 交互 ---------- */
+function setMode(m){
+  mode = (mode===m)?null:m;
+  $('btnAddPoint').className = 'btn'+(mode==='point'?' active':'');
+  $('btnAddLabel').className = 'btn'+(mode==='label'?' active':'');
+  $('btnRuler').className = 'btn'+(mode==='ruler'?' active':'');
+  $('mAddPoint').className = mode==='point'?'active':'';
+  $('mAddLabel').className = mode==='label'?'active':'';
+  $('mRuler').className = mode==='ruler'?'active':'';
+  try{ map.setDefaultCursor(mode?'crosshair':'default'); }catch(e){}
+  if(mode==='point') hint(IS_MOBILE?'点击地图放置点位':'点击地图放置点位（Esc 取消）', 3000);
+  else if(mode==='label') hint(IS_MOBILE?'点击地图放置标签':'点击地图放置标签（Esc 取消）', 3000);
+  else if(mode==='ruler') hint(IS_MOBILE?'点一下定起点，再点一下定终点':'点击第一个端点开始测距（Esc 取消）', 3000);
+  if(mode!=='ruler') clearPendingA();
+}
+
+function doSearch(m){
+  var q = (m ? $('mq') : $('q')).value.trim(); if(!q) return;
+  var rEl = m ? null : $('results');
+  function out(html){ if(m){ $('msheetBody').innerHTML = html; } else { rEl.innerHTML = html; } }
+  if(m){ sheetOpen('搜索结果', '<div class="rmsg">搜索中…</div>'); } else { rEl.innerHTML = '<div class="rmsg">搜索中…</div>'; }
+  var u1 = 'https://restapi.amap.com/v3/place/text?key='+KEY+'&keywords='+encodeURIComponent(q)+'&city=610000&citylimit=true&offset=10&page=1&extensions=base';
+  fetch(u1).then(function(r){return r.json();}).then(function(j){
+    var list = j.pois||[];
+    if(list.length) return list;
+    return fetch(u1.replace('&citylimit=true','')).then(function(r){return r.json();}).then(function(j2){ return j2.pois||[]; });
+  }).then(function(list){
+    if(!list.length){ out('<div class="rmsg">未找到结果</div>'); return; }
+    pois = list;
+    out(list.map(function(p,i){
+      var sub = (p.cityname||'') + (p.adname?('·'+p.adname):'') + ' ' + (p.address||'');
+      return '<div class="res" onclick="__app.locatePoi('+i+'); sheetClose();">'
+        + '<div class="rt">'+esc(p.name)+'</div><div class="rs">'+esc(sub)+'</div>'
+        + '<button class="addb" onclick="event.stopPropagation();__app.addFromPoi('+i+'); sheetClose();">＋</button></div>';
+    }).join(''));
+  }).catch(function(e){ out('<div class="rmsg">搜索失败：'+esc(e.message||e)+'</div>'); });
+}
+
+window.__app = {
+  counts: function(){ return {points: state.points.length, labels: state.labels.length, markers: markers.size, measures: state.measures.length}; },
+  addPointAt: function(lng,lat,name,shape,color){ addPoint({name:name||'', lng:+lng, lat:+lat, shape:shape||shapeSel.shape, color:color||shapeSel.color, typ:'自定义'}, false); return 'ok'; },
+  addLabelAt: function(lng,lat,text){ addLabel({text:text||'标签', lng:+lng, lat:+lat, side:'r'}, false); return 'ok'; },
+  addMeasureAt: function(lngA,latA,lngB,latB){ buildMeasure({a:[+lngA,+latA], b:[+lngB,+latB]}, false); return 'ok'; },
+  delMeasure: function(id){
+    var m = state.measures.find(function(x){return x.id===id;}); if(!m) return;
+    uiConfirm('删除这条测距线？', function(){
+      removeMeasureGraphics(m);
+      state.measures = state.measures.filter(function(x){return x.id!==id;});
+      iw.close(); saveAll(); renderList();
+    }, '删除');
+  },
+  locateMeasure: function(id){
+    var m = state.measures.find(function(x){return x.id===id;}); if(!m) return;
+    map.setFitView([m._mkA, m._mkB]);
+  },
+  locate: function(id){ var p=state.points.find(function(x){return x.id===id;}); if(p) map.setZoomAndCenter(12,[p.lng,p.lat]); },
+  locateLabel: function(id){ var l=state.labels.find(function(x){return x.id===id;}); if(l) map.setZoomAndCenter(13,[l.lng,l.lat]); },
+  locatePoi: function(i){ var p=pois[i]; if(!p) return; var ll=p.location.split(','); var lng=+ll[0], lat=+ll[1]; map.setZoomAndCenter(15,[lng,lat]);
+    if(tempMarker){ map.remove(tempMarker); }
+    var el=document.createElement('div'); el.innerHTML=svgShape('circle','#00A3FF',22);
+    tempMarker=new AMap.Marker({position:[lng,lat], content:el, anchor:'center', zIndex:90}); map.add(tempMarker);
+  },
+  addFromPoi: function(i){ var p=pois[i]; if(!p) return; var ll=p.location.split(','); var lng=+ll[0], lat=+ll[1];
+    var loc=(p.cityname||'')+(p.adname?('·'+p.adname):'')+' '+(p.address||'');
+    addPoint({name:p.name, lng:lng, lat:lat, shape:shapeSel.shape, color:shapeSel.color, typ:'自定义', company:'', loc:loc, pkg:'', side:'r'}, false);
+    hint('已添加：'+p.name);
+  },
+  del: function(id){
+    var p=state.points.find(function(x){return x.id===id;}); if(!p) return;
+    uiConfirm('删除点位“'+(p.name||'(未命名)')+'”？', function(){
+      var o=markers.get(id);
+      if(o){ map.remove(o.marker); if(o.label) map.remove(o.label); markers.delete(id); }
+      state.points = state.points.filter(function(x){return x.id!==id;});
+      state.labels = state.labels.filter(function(l){
+        if(l.pid===id){ if(labelMks.has(l.id)){ map.remove(labelMks.get(l.id)); labelMks.delete(l.id);} return false; }
+        return true;
+      });
+      iw.close(); saveAll(); renderList();
+    }, '删除');
+  },
+  delLabel: function(id){
+    var l=state.labels.find(function(x){return x.id===id;}); if(!l) return;
+    uiConfirm('删除标签“'+l.text+'”？', function(){
+      if(labelMks.has(id)){ map.remove(labelMks.get(id)); labelMks.delete(id); }
+      state.labels = state.labels.filter(function(x){return x.id!==id;});
+      saveAll(); renderList();
+    }, '删除');
+  },
+  ren: function(id){
+    var p=state.points.find(function(x){return x.id===id;}); if(!p) return;
+    uiAsk({ title:'修改名称', value:p.name||'', onOk:function(v){
+      if(v===null || v===undefined) return;
+      p.name=v;
+      state.labels.forEach(function(l){
+        if(l.pid===id){
+          l.text=v;
+          var mk=labelMks.get(l.id);
+          if(mk){ var el=mk.getContent(); if(el&&el.nodeType===1){ el.textContent=v; if(mk._reoff) mk._reoff(); } }
+        }
+      });
+      saveAll(); renderList();
+    }});
+  },
+  reset: function(){
+    uiConfirm('重置为初始8个矿山？你手动添加/移动的内容将丢失。', function(){
+      localStorage.removeItem(LSKEY);
+      initData(); map.setFitView(); hint('已重置为初始8个矿山');
+    }, '重置');
+  },
+  clearAll: function(){
+    uiConfirm('清空全部点位、标签和测距线？', function(){
+      markers.forEach(function(o){ map.remove(o.marker); if(o.label) map.remove(o.label); });
+      markers.clear(); labelMks.clear();
+      if(state.measures) state.measures.forEach(removeMeasureGraphics);
+      state = {points:[], labels:[], measures:[], seq:100};
+      localStorage.removeItem(LSKEY);
+      renderList(); hint('已清空');
+    }, '清空');
+  },
+  exportJSON: function(){
+    var data = {
+      points: state.points.map(function(p){ return {id:p.id,name:p.name,lng:p.lng,lat:p.lat,shape:p.shape,color:p.color,pkg:p.pkg||'',typ:p.typ||'',company:p.company||'',loc:p.loc||''}; }),
+      labels: state.labels.map(function(l){ return {id:l.id,pid:l.pid||null,text:l.text,lng:l.lng,lat:l.lat,side:l.side||'r'}; }),
+      measures: state.measures.map(function(m){ return {id:m.id, a:m.a, b:m.b}; })
+    };
+    var txt = JSON.stringify(data, null, 1);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ hint('已复制到剪贴板'); }, function(){ $('modalTa').value=txt; $('modal').style.display='flex'; });
+    } else { $('modalTa').value=txt; $('modal').style.display='flex'; }
+  },
+  toggleBase: function(){
+    if(curBase==='std'){ map.setLayers([layerSat, layerRoad]); $('btnBase').textContent='底图：卫星（点击切标准）'; curBase='sat'; }
+    else { map.setLayers([layerStd]); $('btnBase').textContent='底图：标准（点击切卫星）'; curBase='std'; }
+  },
+  saveAll: saveAll
+};
+
+/* ---------- 启动 ---------- */
+function boot(){
+  if(typeof AMap === 'undefined'){
+    document.body.insertAdjacentHTML('beforeend','<div style="position:fixed;inset:0;background:#fff;z-index:200;display:flex;align-items:center;justify-content:center;font-size:16px">高德地图加载失败，请检查网络后刷新</div>');
+    return;
+  }
+  map = new AMap.Map('map', {zoom:8, center:[108.0,34.3], viewMode:'2D'});
+  layerStd = new AMap.TileLayer();
+  layerSat = new AMap.TileLayer.Satellite();
+  layerRoad = new AMap.TileLayer.RoadNet();
+  iw = new AMap.InfoWindow({offset:new AMap.Pixel(0,-16)});
+
+  map.on('click', function(e){
+    if(mode==='point'){
+      var _ll0 = [+e.lnglat.lng.toFixed(6), +e.lnglat.lat.toFixed(6)];
+      setMode(null);
+      uiAsk({ title:'添加点位', placeholder:'点位名称（可留空）', withShapes:true, withColors:true, onOk:function(name){
+        name = (name||'').trim();
+        addPoint({name:name, lng:_ll0[0], lat:_ll0[1], shape:shapeSel.shape, color:shapeSel.color, typ:'自定义', pkg:'', side:'r'}, false);
+        hint(name?('已添加：'+name):'已添加未命名点位');
+      }});
+    } else if(mode==='label'){
+      var _ll1 = [+e.lnglat.lng.toFixed(6), +e.lnglat.lat.toFixed(6)];
+      setMode(null);
+      uiAsk({ title:'添加标签', placeholder:'标签文字', onOk:function(t){
+        t = (t||'').trim();
+        if(t){ addLabel({text:t, lng:_ll1[0], lat:_ll1[1], side:'r'}, false); hint('已添加标签'); }
+      }});
+    } else if(mode==='ruler'){
+      if(!pendingA){
+        pendingA = {lng:+e.lnglat.lng, lat:+e.lnglat.lat};
+        var pel = document.createElement('div');
+        pel.className = 'mk';
+        pel.innerHTML = svgShape('circle', '#E67E22', 18);
+        pendingA._mk = new AMap.Marker({position:[pendingA.lng, pendingA.lat], content:pel, anchor:'center', zIndex:90});
+        map.add(pendingA._mk);
+        hint('再点击第二个点完成测距（Esc 取消）', 4000);
+      } else {
+        var pa = [pendingA.lng, pendingA.lat];
+        var pb = [+e.lnglat.lng, +e.lnglat.lat];
+        if(haversine(pa[0], pa[1], pb[0], pb[1]) < 20){ hint('两点太近，已取消'); }
+        else { buildMeasure({a:pa, b:pb}, false); hint('已添加测距线 ≈ ' + fmtDist(haversine(pa[0], pa[1], pb[0], pb[1]))); }
+        clearPendingA();
+        setMode(null);
+      }
+    }
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ setMode(null); clearPendingA(); } });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sh'), function(s){
+    s.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.sh'), function(x){x.classList.remove('active');});
+      s.classList.add('active'); shapeSel.shape = s.getAttribute('data-sh');
+    });
+  });
+  var cr = $('colorRow');
+  PALETTE.forEach(function(c){
+    var sp=document.createElement('span'); sp.className='sw'+(c===C2?' active':''); sp.style.background=c;
+    sp.addEventListener('click', function(){
+      Array.prototype.forEach.call(cr.querySelectorAll('.sw'), function(x){x.classList.remove('active');});
+      sp.classList.add('active'); shapeSel.color=c;
+    });
+    cr.appendChild(sp);
+  });
+  var cc=document.createElement('input'); cc.type='color'; cc.value='#c0392b'; cc.style.cssText='width:24px;height:24px;border:none;background:none;cursor:pointer;padding:0';
+  cc.addEventListener('input', function(){ shapeSel.color=cc.value; Array.prototype.forEach.call(cr.querySelectorAll('.sw'), function(x){x.classList.remove('active');}); });
+  cr.appendChild(cc);
+
+  $('btnAddPoint').addEventListener('click', function(){ setMode('point'); });
+  $('btnAddLabel').addEventListener('click', function(){ setMode('label'); });
+  $('btnRuler').addEventListener('click', function(){ setMode('ruler'); });
+  $('btnSearch').addEventListener('click', function(){ doSearch(false); });
+  $('q').addEventListener('keydown', function(e){ if(e.key==='Enter') doSearch(false); });
+  $('btnBase').addEventListener('click', function(){ __app.toggleBase(); });
+  $('btnReset').addEventListener('click', function(){ window.__app.reset(); });
+  $('btnClear').addEventListener('click', function(){ window.__app.clearAll(); });
+  $('btnExport').addEventListener('click', function(){ window.__app.exportJSON(); });
+
+  // 弹窗/抽屉按钮
+  $('mmOk').addEventListener('click', function(){ var f = _uiOnOk; uiClose(); if(f) f(); });
+  $('mmCancel').addEventListener('click', uiClose);
+  $('msheetClose').addEventListener('click', sheetClose);
+  $('msheet').addEventListener('click', function(e){ if(e.target === $('msheet')) sheetClose(); });
+  $('mmInput').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); $('mmOk').click(); } });
+
+  // 移动端接线
+  if(IS_MOBILE){
+    $('msearch').addEventListener('click', function(){ doSearch(true); });
+    $('mq').addEventListener('keydown', function(e){ if(e.key === 'Enter') doSearch(true); });
+    $('mAddPoint').addEventListener('click', function(){ setMode('point'); });
+    $('mAddLabel').addEventListener('click', function(){ setMode('label'); });
+    $('mRuler').addEventListener('click', function(){ setMode('ruler'); });
+    $('mList').addEventListener('click', showMobileList);
+    $('mMore').addEventListener('click', showMobileMore);
+  }
+  window.addEventListener('resize', function(){ try{ if(map) map.resize(); }catch(e){} });
+
+  initData();
+  setTimeout(function(){ map.setFitView(); }, 300);
+}
+if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(boot, 50); }
+else { window.addEventListener('load', boot); }
+</script>
+</body>
+</html>
