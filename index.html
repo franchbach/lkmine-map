@@ -44,6 +44,11 @@
   .mini.del{color:#c0392b}
   .lbl{background:#fff;border:1.5px solid #999;border-radius:4px;padding:2px 8px;font-size:12.5px;color:#222;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:move;user-select:none;-webkit-user-select:none}
   .mk{cursor:move;line-height:0}
+  .navbtns{display:flex;gap:8px;margin-top:10px}
+  .navbtns a{flex:1;text-align:center;padding:7px 8px;border-radius:6px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:600}
+  .navbtns a.am{background:#0f84ff}
+  .navbtns a.bm{background:#2932e1}
+  body.mobile .navbtns a{padding:10px 8px;font-size:14px}
   #hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(28,28,28,.86);color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;z-index:60;display:none;white-space:nowrap}
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;display:none;align-items:center;justify-content:center}
   #modal .box{background:#fff;border-radius:8px;padding:14px;width:440px;max-width:90%}
@@ -432,14 +437,27 @@ function buildMeasure(m, silent){
   return m;
 }
 
+function gcj02ToBd09(lng, lat){
+  var z = Math.sqrt(lng*lng + lat*lat) + 0.00002 * Math.sin(lat * Math.PI * 3000.0/180.0);
+  var th = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * Math.PI * 3000.0/180.0);
+  return [+(z*Math.cos(th)+0.0065).toFixed(6), +(z*Math.sin(th)+0.006).toFixed(6)];
+}
+function navLinks(p){
+  var nm = p.name || '目的地';
+  var amap = 'https://uri.amap.com/navigation?to=' + (+p.lng).toFixed(6) + ',' + (+p.lat).toFixed(6) + ',' + encodeURIComponent(nm) + '&mode=car&policy=1&src=lkmine_map&coordinate=gaode&callnative=1';
+  var bd = gcj02ToBd09(+p.lng, +p.lat);
+  var baidu = 'https://api.map.baidu.com/marker?location=' + bd[1] + ',' + bd[0] + '&title=' + encodeURIComponent(nm) + '&content=' + encodeURIComponent(p.loc || ('坐标 ' + bd[1] + ',' + bd[0])) + '&output=html&coord_type=bd09ll&zoom=14&src=webapp.lkmine_map';
+  return '<div class="navbtns"><a class="am" href="'+amap+'" target="_blank" rel="noopener">高德导航</a><a class="bm" href="'+baidu+'" target="_blank" rel="noopener">百度导航</a></div>';
+}
 function showInfo(p){
-  var h = '<div style="font-size:13px;line-height:1.7;min-width:210px">'
+  var h = '<div style="font-size:13px;line-height:1.7;min-width:238px">'
     + '<b>'+esc(p.name||'(未命名)')+'</b> '+(p.pkg?('<span style="color:#fff;background:'+(p.color||'#888')+';border-radius:3px;padding:0 5px;font-size:11px">'+esc(p.pkg)+'</span>'):'')
     + '<br>类型：'+esc(p.typ||'-')
     + '<br>单位：'+esc(p.company||'-')
     + '<br>位置：'+esc(p.loc||'-')
     + '<br>坐标：'+p.lng.toFixed(5)+', '+p.lat.toFixed(5)
-    + '<br><a href="javascript:void(0)" onclick="__app.del(\''+p.id+'\')" style="color:#c0392b">删除该点位</a>'
+    + navLinks(p)
+    + '<div style="margin-top:8px"><a href="javascript:void(0)" onclick="__app.del(\''+p.id+'\')" style="color:#c0392b">删除该点位</a></div>'
     + '</div>';
   iw.setContent(h);
   iw.open(map, [p.lng,p.lat]);
