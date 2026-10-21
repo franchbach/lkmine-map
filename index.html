@@ -119,8 +119,9 @@
     <div id="results"></div>
   </div>
   <div class="card">
+    <button id="btnRoute" class="btn">🧭 核查线路：显示中（点击隐藏）</button>
     <button id="btnBase" class="btn">底图：标准（点击切卫星）</button>
-    <button id="btnReset" class="btn">↺ 重置为初始8个矿</button>
+    <button id="btnReset" class="btn">↺ 重置为初始10个矿</button>
     <button id="btnClear" class="btn">🗑 清空全部点位与标签</button>
     <button id="btnExport" class="btn">⤓ 导出 JSON（复制到剪贴板）</button>
   </div>
@@ -130,9 +131,10 @@
 
 <div id="legendbox" class="card">
   <b>图例</b><br>
-  ★＝委托评估对象　●＝2026年抽查对象<br>
+  ★＝委托评估对象　●＝2026年抽查对象　■＝核查砖厂（10月26日）<br>
   <span style="color:#C0392B">红色＝包2（西部（重庆）地质科技创新研究院）</span><br>
-  <span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span>
+  <span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>
+  <span style="color:#D64532">━</span> 核查转场　<span style="color:#78909C">╌</span> 往返/住宿通勤（里程=驾车实测）
 </div>
 
 <div id="mtop"><input id="mq" placeholder="搜索地址 / 矿山名…"><button id="msearch">搜索</button></div>
@@ -159,18 +161,20 @@
 <script>
 'use strict';
 var KEY = 'd1582d52329b5b3fd0b13bdac2a90d0a';
-var LSKEY = 'lkmine_map_v1';
+var LSKEY = 'lkmine_map_v2';
 var C2 = '#C0392B', C6 = '#1F5FA8';
 
 var INITIAL = [
   {id:'m1', name:'二门村寨沟建筑石料用灰岩矿', lng:106.7725, lat:33.0295, shape:'star',  color:C2, pkg:'包2', typ:'委托评估',  company:'陕西交控汉中新材料有限公司', loc:'汉中市南郑区新集镇二门村', side:'r'},
-  {id:'m2', name:'蒋家河煤矿',                 lng:107.9328, lat:35.0063, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'彬县煤炭有限责任公司',       loc:'咸阳市彬州市', side:'l'},
-  {id:'m3', name:'大佛寺煤矿',                 lng:107.9658, lat:35.0738, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'陕西彬长大佛寺矿业有限公司', loc:'咸阳市彬州市城关街道', side:'ru'},
-  {id:'m4', name:'孟村煤矿',                   lng:107.9365, lat:35.1465, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查', company:'陕西彬长孟村矿业有限公司',   loc:'咸阳市长武县', side:'lu'},
+  {id:'m2', name:'蒋家河煤矿',                 lng:107.9328, lat:35.0063, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查·10月25日', company:'彬县煤炭有限责任公司',       loc:'咸阳市彬州市', side:'l'},
+  {id:'m3', name:'大佛寺煤矿',                 lng:107.9658, lat:35.0738, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查·10月25日', company:'陕西彬长大佛寺矿业有限公司', loc:'咸阳市彬州市城关街道', side:'ru'},
+  {id:'m4', name:'孟村煤矿',                   lng:107.9365, lat:35.1465, shape:'circle', color:C2, pkg:'包2', typ:'2026年抽查·10月26日', company:'陕西彬长孟村矿业有限公司',   loc:'咸阳市长武县', side:'lu'},
   {id:'m5', name:'陕南石棉矿',                 lng:106.2740, lat:33.1760, shape:'star',  color:C6, pkg:'包6', typ:'委托评估',  company:'陕西天宝矿业有限公司',       loc:'汉中市宁强县大安镇黑木林村', side:'r'},
   {id:'m6', name:'阴湾水泥用石灰岩矿',         lng:107.1148, lat:34.5570, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'宝鸡市众喜金陵河水泥有限公司', loc:'宝鸡市陈仓区县功镇', side:'l'},
   {id:'m7', name:'草山灰岩矿',                 lng:107.9847, lat:34.5592, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'冀东海德堡（扶风）水泥有限公司', loc:'宝鸡市扶风县天度镇闫马村北', side:'ru'},
-  {id:'m8', name:'高家堡煤矿',                 lng:107.8245, lat:35.2675, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'陕西正通煤业有限责任公司',   loc:'咸阳市长武县彭公镇', side:'u'}
+  {id:'m8', name:'高家堡煤矿',                 lng:107.8245, lat:35.2675, shape:'circle', color:C6, pkg:'包6', typ:'2026年抽查', company:'陕西正通煤业有限责任公司',   loc:'咸阳市长武县彭公镇', side:'u'},
+  {id:'m9', name:'冯东砖厂',                   lng:108.2135, lat:34.6504, shape:'square', color:'#27AE60', pkg:'', typ:'10月26日核查', company:'乾县阳峪镇冯东砖厂（砖瓦用粘土矿）', loc:'咸阳市乾县阳峪镇冯东村', side:'r'},
+  {id:'m10', name:'南坡村砖厂',                lng:108.1864, lat:34.6226, shape:'square', color:'#27AE60', pkg:'', typ:'10月26日核查', company:'乾县梁山镇南坡村（砖瓦用粘土矿）',   loc:'咸阳市乾县梁山镇南坡村', side:'l'}
 ];
 
 var PALETTE = ['#C0392B','#1F5FA8','#E67E22','#27AE60','#8E44AD','#16A085','#D4A017','#333333'];
@@ -276,8 +280,9 @@ function showMobileList(){
 }
 function showMobileMore(){
   var base = (curBase === 'std') ? '底图：标准（点击切卫星）' : '底图：卫星（点击切标准）';
-  var h = '<button class="mbtn" onclick="__app.toggleBase(); this.textContent=(curBase===\'sat\'?\'底图：卫星（点击切标准）\':\'底图：标准（点击切卫星）\');">' + base + '</button>'
-    + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始8个矿</button>'
+  var h = '<button class="mbtn" onclick="__app.toggleRoute(); this.textContent=(routeVisible?\'🧭 核查线路：显示中（点击隐藏）\':\'🧭 核查线路：已隐藏（点击显示）\');">🧭 核查线路：显示中（点击隐藏）</button>'
+    + '<button class="mbtn" onclick="__app.toggleBase(); this.textContent=(curBase===\'sat\'?\'底图：卫星（点击切标准）\':\'底图：标准（点击切卫星）\');">' + base + '</button>'
+    + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始10个矿</button>'
     + '<button class="mbtn" onclick="__app.clearAll(); sheetClose();">🗑 清空全部点位、标签、测距线</button>'
     + '<button class="mbtn" onclick="__app.exportJSON(); sheetClose();">⤓ 导出 JSON（复制）</button>'
     + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估对象　●＝2026年抽查对象<br><span style="color:#C0392B">红色＝包2（西部（重庆）地质科技创新研究院）</span><br><span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span></div>';
@@ -651,9 +656,9 @@ window.__app = {
     }});
   },
   reset: function(){
-    uiConfirm('重置为初始8个矿山？你手动添加/移动的内容将丢失。', function(){
+    uiConfirm('重置为初始10个矿山？你手动添加/移动的内容将丢失。', function(){
       localStorage.removeItem(LSKEY);
-      initData(); map.setFitView(); hint('已重置为初始8个矿山');
+      initData(); map.setFitView(); hint('已重置为初始10个矿山');
     }, '重置');
   },
   clearAll: function(){
@@ -681,6 +686,7 @@ window.__app = {
     if(curBase==='std'){ map.setLayers([layerSat, layerRoad]); $('btnBase').textContent='底图：卫星（点击切标准）'; curBase='sat'; }
     else { map.setLayers([layerStd]); $('btnBase').textContent='底图：标准（点击切卫星）'; curBase='std'; }
   },
+  toggleRoute: toggleRoute,
   saveAll: saveAll,
   navGo: function(kind, id){
     var p = state.points.find(function(x){ return x.id===id; });
@@ -703,6 +709,50 @@ window.__app = {
     return false;
   }
 };
+
+/* ---------- 核查线路图层（静态示意，直线；里程/时间为高德驾车实测） ---------- */
+var routeOvs = null, routeVisible = true;
+var ROUTE_SEGS = [
+  {a:[108.9402,34.3416], b:[107.9328,35.0063], txt:'161 km · 2h20m', red:false},
+  {a:[107.9328,35.0063], b:[107.9658,35.0738], txt:'17 km · 26m',    red:true},
+  {a:[107.9658,35.0738], b:[108.0836,35.0336], txt:'14 km · 22m',    red:false},
+  {a:[108.0836,35.0336], b:[107.9365,35.1465], txt:'23 km · 39m',    red:false},
+  {a:[107.9365,35.1465], b:[108.2135,34.6504], txt:'78.5 km · 1h45m',red:true},
+  {a:[108.2135,34.6504], b:[108.1864,34.6226], txt:'7.8 km · 14m',   red:true},
+  {a:[108.1864,34.6226], b:[108.9402,34.3416], txt:'91 km · 1h20m',  red:false}
+];
+var ROUTE_CITIES = [
+  {pos:[108.9402,34.3416], txt:'🚩 西安市区（出发 / 返回）', color:'#546E7A'},
+  {pos:[108.0836,35.0336], txt:'🏨 彬州市区（25日住宿）', color:'#27AE60'}
+];
+function buildRouteLayer(){
+  if(routeOvs) return;
+  routeOvs = [];
+  ROUTE_SEGS.forEach(function(s){
+    var line = new AMap.Polyline({path:[s.a, s.b], strokeColor: s.red ? '#D64532' : '#78909C', strokeWeight:4.5, strokeOpacity:0.9, strokeStyle: s.red ? 'solid' : 'dashed', lineJoin:'round', zIndex:80, bubble:true});
+    map.add(line); routeOvs.push(line);
+    var el = document.createElement('div');
+    el.className='lbl'; el.style.borderColor = s.red ? '#D64532' : '#78909C';
+    el.style.fontSize='11.5px'; el.style.fontWeight='700';
+    el.style.color = s.red ? '#B03A28' : '#546E7A';
+    el.textContent = s.txt;
+    var mk = new AMap.Marker({position:[(s.a[0]+s.b[0])/2, (s.a[1]+s.b[1])/2], content:el, anchor:'center', zIndex:95});
+    map.add(mk); routeOvs.push(mk);
+  });
+  ROUTE_CITIES.forEach(function(c){
+    var el = document.createElement('div');
+    el.className='lbl'; el.style.borderColor=c.color; el.style.fontWeight='700'; el.textContent=c.txt;
+    var mk = new AMap.Marker({position:c.pos, content:el, anchor:'center', zIndex:96});
+    map.add(mk); routeOvs.push(mk);
+  });
+}
+function toggleRoute(){
+  routeVisible = !routeVisible;
+  if(!routeOvs) buildRouteLayer();
+  if(routeVisible){ routeOvs.forEach(function(o){ map.add(o); }); hint('核查线路已显示'); }
+  else { routeOvs.forEach(function(o){ map.remove(o); }); hint('核查线路已隐藏'); }
+  $('btnRoute').textContent = routeVisible ? '🧭 核查线路：显示中（点击隐藏）' : '🧭 核查线路：已隐藏（点击显示）';
+}
 
 /* ---------- 启动 ---------- */
 function boot(){
@@ -778,6 +828,7 @@ function boot(){
   $('btnSearch').addEventListener('click', function(){ doSearch(false); });
   $('q').addEventListener('keydown', function(e){ if(e.key==='Enter') doSearch(false); });
   $('btnBase').addEventListener('click', function(){ __app.toggleBase(); });
+  $('btnRoute').addEventListener('click', function(){ toggleRoute(); });
   $('btnReset').addEventListener('click', function(){ window.__app.reset(); });
   $('btnClear').addEventListener('click', function(){ window.__app.clearAll(); });
   $('btnExport').addEventListener('click', function(){ window.__app.exportJSON(); });
@@ -802,6 +853,7 @@ function boot(){
   window.addEventListener('resize', function(){ try{ if(map) map.resize(); }catch(e){} });
 
   initData();
+  buildRouteLayer();
   setTimeout(function(){ map.setFitView(); }, 300);
 }
 if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(boot, 50); }
