@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>绿矿矿山地图 · 10月27日行程</title>
+<title>绿矿矿山地图 · 11月4日行程</title>
 <style>
   html,body{margin:0;height:100%;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
   #map{position:absolute;inset:0;background:#e8e8e8}
@@ -99,7 +99,7 @@
 
 <div id="panel">
   <div class="card">
-    <div class="ttl">绿矿矿山地图 · 10月27日行程</div>
+    <div class="ttl">绿矿矿山地图 · 11月4日行程</div>
     <div class="sub">凤翔出发 → 凤县两矿 → 宁强石棉矿（高德实测）</div>
   </div>
   <div class="card">
@@ -133,7 +133,7 @@
   <b>图例</b><br>
   ★＝委托评估　●＝抽查/复核　▲＝预评估<br>
   <span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>
-  <span style="color:#D64532">━</span> 10月27日核查转场（里程/用时=高德实测）
+  <span style="color:#D64532">━</span> 11月4日核查转场（里程/用时=高德实测）
 </div>
 
 <div id="mtop"><input id="mq" placeholder="搜索地址 / 矿山名…"><button id="msearch">搜索</button></div>
@@ -160,14 +160,14 @@
 <script>
 'use strict';
 var KEY = 'd1582d52329b5b3fd0b13bdac2a90d0a';
-var LSKEY = 'lkmine_map_v4';
+var LSKEY = 'lkmine_map_v5';
 var C2 = '#C0392B', C6 = '#1F5FA8';
 
 var INITIAL = [
-  {id:'m6', name:'阴湾水泥用石灰岩矿', lng:107.1148, lat:34.5570, shape:'circle', color:C6, pkg:'包6', typ:'10月27日复核', company:'宝鸡市众喜金陵河水泥有限公司', loc:'宝鸡市陈仓区县功镇', side:'l'},
-  {id:'m5', name:'陕南石棉矿',         lng:106.2740, lat:33.1760, shape:'star',   color:C6, pkg:'包6', typ:'10月27日预评估', company:'陕西天宝矿业有限公司', loc:'汉中市宁强县大安镇黑木林村', side:'r'},
-  {id:'m11', name:'手搬岩铅锌矿',      lng:106.649217, lat:33.850163, shape:'triangle', color:'#E67E22', pkg:'', typ:'10月27日预评估', company:'凤县手搬岩铅锌矿', loc:'宝鸡市凤县留凤关镇大层上', side:'l'},
-  {id:'m12', name:'寨子沟铅锌矿',      lng:106.977568, lat:33.871540, shape:'triangle', color:'#E67E22', pkg:'', typ:'10月27日预评估', company:'凤县宇生矿业有限责任公司', loc:'宝鸡市凤县坪坎镇张家院子', side:'r'}
+  {id:'m6', name:'阴湾水泥用石灰岩矿', lng:107.1148, lat:34.5570, shape:'circle', color:C6, pkg:'包6', typ:'11月4日复核', company:'宝鸡市众喜金陵河水泥有限公司', loc:'宝鸡市陈仓区县功镇', side:'l'},
+  {id:'m5', name:'陕南石棉矿',         lng:106.2740, lat:33.1760, shape:'star',   color:C6, pkg:'包6', typ:'11月4日预评估', company:'陕西天宝矿业有限公司', loc:'汉中市宁强县大安镇黑木林村', side:'r'},
+  {id:'m11', name:'手搬岩铅锌矿',      lng:106.649217, lat:33.850163, shape:'triangle', color:'#E67E22', pkg:'', typ:'11月4日预评估', company:'凤县手搬岩铅锌矿', loc:'宝鸡市凤县留凤关镇大层上', side:'l'},
+  {id:'m12', name:'寨子沟铅锌矿',      lng:106.977568, lat:33.871540, shape:'triangle', color:'#E67E22', pkg:'', typ:'11月4日预评估', company:'凤县宇生矿业有限责任公司', loc:'宝鸡市凤县坪坎镇张家院子', side:'r'}
 ];
 
 var PALETTE = ['#C0392B','#1F5FA8','#E67E22','#27AE60','#8E44AD','#16A085','#D4A017','#333333'];
@@ -278,7 +278,7 @@ function showMobileMore(){
     + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始4个矿</button>'
     + '<button class="mbtn" onclick="__app.clearAll(); sheetClose();">🗑 清空全部点位、标签、测距线</button>'
     + '<button class="mbtn" onclick="__app.exportJSON(); sheetClose();">⤓ 导出 JSON（复制）</button>'
-    + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估　●＝抽查/复核　▲＝预评估<br><span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>红线＝10月27日核查转场（里程/用时=高德实测）</div>';
+    + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估　●＝抽查/复核　▲＝预评估<br><span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>红线＝11月4日核查转场（里程/用时=高德实测）</div>';
   sheetOpen('更多', h);
 }
 
