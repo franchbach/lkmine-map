@@ -42,7 +42,11 @@
   .mini{font-size:11.5px;color:#2b7cd3;cursor:pointer;white-space:nowrap}
   .mini:hover{text-decoration:underline}
   .mini.del{color:#c0392b}
-  .lbl{background:#fff;border:1.5px solid #999;border-radius:4px;padding:2px 8px;font-size:12.5px;color:#222;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:move;user-select:none;-webkit-user-select:none}
+  .lbl{background:#fff;border:1.5px solid #999;border-radius:4px;padding:2px 8px;font-size:calc(12.5px * var(--lbl-scale,1));color:#222;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:move;user-select:none;-webkit-user-select:none}
+  .lblseg{font-size:calc(11.5px * var(--lbl-scale,1)) !important}
+  .fsbtn{padding:3px 10px;border:1px solid #d0d0d0;border-radius:6px;background:#fafafa;cursor:pointer;font-size:13px;font-family:inherit}
+  .fsbtn:hover{background:#f0f6ff;border-color:#7aa7d9}
+  #fsVal{font-size:12px;color:#555;min-width:44px;text-align:center;display:inline-block}
   .mk{cursor:move;line-height:0}
   .navbtns{display:flex;gap:8px;margin-top:10px}
   .navbtns a{flex:1;text-align:center;padding:7px 8px;border-radius:6px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:600}
@@ -67,7 +71,7 @@
   #mbar button .ico{ font-size:21px; line-height:1.2; }
   #mbar button.active{ color:#1a5fb4; font-weight:700; }
   body.mobile #hint{ top:auto; bottom:84px; font-size:13px; max-width:92%; white-space:normal; text-align:center; }
-  body.mobile .lbl{ font-size:13px; padding:3px 9px; }
+  body.mobile .lbl{ font-size:calc(13px * var(--lbl-scale,1)); padding:3px 9px; }
   #msheet{ display:none; position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.35); }
   #msheet.show{ display:block; }
   #msheet .card-sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:14px 14px 0 0; max-height:74%; display:flex; flex-direction:column; }
@@ -111,6 +115,9 @@
       <span class="sh" data-sh="star" title="五角星">★</span>
       <span class="sh" data-sh="triangle" title="三角形">▲</span>
       <span class="sh" data-sh="square" title="方形">■</span>
+    </div>
+    <div class="row"><span class="lab">标签字号</span>
+      <button id="fsMinus" class="fsbtn">A－</button><span id="fsVal">100%</span><button id="fsPlus" class="fsbtn">A＋</button>
     </div>
     <div class="row" id="colorRow"><span class="lab">颜色</span></div>
   </div>
@@ -279,6 +286,10 @@ function showMobileMore(){
     + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始4个矿</button>'
     + '<button class="mbtn" onclick="__app.clearAll(); sheetClose();">🗑 清空全部点位、标签、测距线</button>'
     + '<button class="mbtn" onclick="__app.exportJSON(); sheetClose();">⤓ 导出 JSON（复制）</button>'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span style="font-size:13px;color:#555">标签字号</span>'
+    + '<button class="mbtn" style="flex:1;margin:0" onclick="__app.scaleLbl(-0.1)">A－</button>'
+    + '<span id="mFsVal" style="font-size:13px;color:#333;min-width:46px;text-align:center">' + Math.round(lblScale*100) + '%</span>'
+    + '<button class="mbtn" style="flex:1;margin:0" onclick="__app.scaleLbl(0.1)">A＋</button></div>'
     + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估　●＝抽查/复核　▲＝预评估（蓝＝包6）<br>'
     + '<span style="color:#C0392B">━① 凤翔→阴湾</span>　<span style="color:#B9770E">━② 阴湾→寨子沟</span><br>'
     + '<span style="color:#1E8449">━③ 寨子沟→手搬岩</span>　<span style="color:#6C3483">━④ 手搬岩→石棉矿</span><br>'
@@ -691,6 +702,7 @@ window.__app = {
     else { map.setLayers([layerStd]); $('btnBase').textContent='底图：标准（点击切卫星）'; curBase='std'; }
   },
   toggleRoute: toggleRoute,
+  scaleLbl: scaleLbl,
   saveAll: saveAll,
   navGo: function(kind, id){
     var p = state.points.find(function(x){ return x.id===id; });
@@ -741,8 +753,8 @@ function buildRouteLayer(){
     var line = new AMap.Polyline({path:path, strokeColor:col, strokeWeight:4.5, strokeOpacity:0.9, strokeStyle: s.red ? 'solid' : (s.color ? 'solid' : 'dashed'), lineJoin:'round', zIndex:80, bubble:true});
     map.add(line); routeOvs.push(line); s._line = line;
     var el = document.createElement('div');
-    el.className='lbl'; el.style.borderColor = col;
-    el.style.fontSize='11.5px'; el.style.fontWeight='700';
+    el.className='lbl lblseg'; el.style.borderColor = col;
+    el.style.fontWeight='700';
     el.style.color = col;
     el.textContent = s.txt;
     var mid = path[Math.floor(path.length/2)];
@@ -779,6 +791,23 @@ function toggleRoute(){
   if(routeVisible){ routeOvs.forEach(function(o){ map.add(o); }); hint('核查线路已显示'); }
   else { routeOvs.forEach(function(o){ map.remove(o); }); hint('核查线路已隐藏'); }
   $('btnRoute').textContent = routeVisible ? '🧭 核查线路：显示中（点击隐藏）' : '🧭 核查线路：已隐藏（点击显示）';
+}
+
+/* ---------- 标签字号调节 ---------- */
+var LBLSCALE_KEY = 'lkmine_lblscale_v1';
+var lblScale = 1;
+try{ lblScale = parseFloat(localStorage.getItem(LBLSCALE_KEY)) || 1; }catch(e){ lblScale = 1; }
+function applyLblScale(){
+  document.body.style.setProperty('--lbl-scale', String(lblScale));
+  var t = Math.round(lblScale * 100) + '%';
+  if($('fsVal')) $('fsVal').textContent = t;
+  if($('mFsVal')) $('mFsVal').textContent = t;
+  try{ localStorage.setItem(LBLSCALE_KEY, String(lblScale)); }catch(e){}
+  labelMks.forEach(function(mk){ if(mk._reoff) mk._reoff(); });
+}
+function scaleLbl(d){
+  lblScale = Math.max(0.7, Math.min(2.2, Math.round((lblScale + d) * 10) / 10));
+  applyLblScale();
 }
 
 /* ---------- 启动 ---------- */
@@ -857,6 +886,8 @@ function boot(){
   $('btnBase').addEventListener('click', function(){ __app.toggleBase(); });
   $('btnRoute').addEventListener('click', function(){ toggleRoute(); });
   $('btnReset').addEventListener('click', function(){ window.__app.reset(); });
+  $('fsMinus').addEventListener('click', function(){ scaleLbl(-0.1); });
+  $('fsPlus').addEventListener('click', function(){ scaleLbl(0.1); });
   $('btnClear').addEventListener('click', function(){ window.__app.clearAll(); });
   $('btnExport').addEventListener('click', function(){ window.__app.exportJSON(); });
 
@@ -881,6 +912,7 @@ function boot(){
 
   initData();
   buildRouteLayer();
+  applyLblScale();
   setTimeout(function(){ map.setFitView(); }, 300);
 }
 if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(boot, 50); }
