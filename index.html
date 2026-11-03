@@ -131,9 +131,10 @@
 
 <div id="legendbox" class="card">
   <b>图例</b><br>
-  ★＝委托评估　●＝抽查/复核　▲＝预评估<br>
-  <span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>
-  <span style="color:#D64532">━</span> 11月4日核查转场（里程/用时=高德实测）
+  ★＝委托评估　●＝抽查/复核　▲＝预评估（蓝＝包6）<br>
+  <span style="color:#C0392B">━① 凤翔→阴湾</span>　<span style="color:#B9770E">━② 阴湾→寨子沟</span><br>
+  <span style="color:#1E8449">━③ 寨子沟→手搬岩</span>　<span style="color:#6C3483">━④ 手搬岩→石棉矿</span><br>
+  里程/用时＝高德驾车实测（真实道路轨迹）
 </div>
 
 <div id="mtop"><input id="mq" placeholder="搜索地址 / 矿山名…"><button id="msearch">搜索</button></div>
@@ -278,7 +279,10 @@ function showMobileMore(){
     + '<button class="mbtn" onclick="__app.reset(); sheetClose();">↺ 重置为初始4个矿</button>'
     + '<button class="mbtn" onclick="__app.clearAll(); sheetClose();">🗑 清空全部点位、标签、测距线</button>'
     + '<button class="mbtn" onclick="__app.exportJSON(); sheetClose();">⤓ 导出 JSON（复制）</button>'
-    + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估　●＝抽查/复核　▲＝预评估<br><span style="color:#1F5FA8">蓝色＝包6（西北有色勘测工程有限责任公司）</span><br>红线＝11月4日核查转场（里程/用时=高德实测）</div>';
+    + '<div style="color:#555;font-size:13px;line-height:1.9;margin-top:14px">★＝委托评估　●＝抽查/复核　▲＝预评估（蓝＝包6）<br>'
+    + '<span style="color:#C0392B">━① 凤翔→阴湾</span>　<span style="color:#B9770E">━② 阴湾→寨子沟</span><br>'
+    + '<span style="color:#1E8449">━③ 寨子沟→手搬岩</span>　<span style="color:#6C3483">━④ 手搬岩→石棉矿</span><br>'
+    + '里程/用时＝高德驾车实测（真实道路轨迹，里程标签可拖动）</div>';
   sheetOpen('更多', h);
 }
 
@@ -652,6 +656,8 @@ window.__app = {
     uiConfirm('重置为初始4个矿山？你手动添加/移动的内容将丢失。', function(){
       localStorage.removeItem(LSKEY);
       localStorage.removeItem(CITY_POS_KEY);
+      localStorage.removeItem(SEGLBL_KEY);
+      segLblPos = {};
       initData();
       if(routeOvs){ routeOvs.forEach(function(o){ map.remove(o); }); routeOvs = null; }
       ROUTE_SEGS.forEach(function(s, i){ s.a = ORIG_SEGS[i].a.slice(); s.b = ORIG_SEGS[i].b.slice(); });
@@ -711,11 +717,12 @@ window.__app = {
 /* ---------- 核查线路图层（静态示意，直线；里程/时间为高德驾车实测） ---------- */
 var routeOvs = null, routeVisible = true;
 var cityPos = {}, CITY_POS_KEY = 'lkmine_citypos_v1';
+var segLblPos = {}, SEGLBL_KEY = 'lkmine_seglbl_v1';
 var ROUTE_SEGS = [
-  {a:[107.401029,34.522167], b:[107.114800,34.557000], txt:'51.1 km · 1小时19分钟', red:true},
-  {a:[107.114800,34.557000], b:[106.977568,33.871540], txt:'112 km · 2小时03分钟', red:true},
-  {a:[106.977568,33.871540], b:[106.649217,33.850163], txt:'89.4 km · 1小时29分钟', red:true},
-  {a:[106.649217,33.850163], b:[106.274000,33.176000], txt:'181 km · 3小时12分钟', red:true}
+  {a:[107.401029,34.522167], b:[107.114800,34.557000], txt:'① 51.1 km · 1小时19分钟', color:'#C0392B'},
+  {a:[107.114800,34.557000], b:[106.977568,33.871540], txt:'② 112 km · 2小时03分钟', color:'#B9770E'},
+  {a:[106.977568,33.871540], b:[106.649217,33.850163], txt:'③ 89.4 km · 1小时29分钟', color:'#1E8449'},
+  {a:[106.649217,33.850163], b:[106.274000,33.176000], txt:'④ 181 km · 3小时12分钟', color:'#6C3483'}
 ];
 var ROUTE_CITIES = [
   {pos:[107.401029,34.522167], txt:'🚩 凤翔县城（明日出发）', color:'#546E7A', seg:0, end:'a'}
@@ -726,19 +733,31 @@ ROUTE_SEGS.forEach(function(s,i){ if(ROUTE_PATHS[i]) s.path = ROUTE_PATHS[i]; })
 function buildRouteLayer(){
   if(routeOvs) return;
   try{ cityPos = JSON.parse(localStorage.getItem(CITY_POS_KEY)) || {}; }catch(e){ cityPos = {}; }
+  try{ segLblPos = JSON.parse(localStorage.getItem(SEGLBL_KEY)) || {}; }catch(e){ segLblPos = {}; }
   routeOvs = [];
   ROUTE_SEGS.forEach(function(s){
     var path = (s.path && s.path.length > 1) ? s.path : [s.a, s.b];
-    var line = new AMap.Polyline({path:path, strokeColor: s.red ? '#D64532' : '#78909C', strokeWeight:4.5, strokeOpacity:0.9, strokeStyle: s.red ? 'solid' : 'dashed', lineJoin:'round', zIndex:80, bubble:true});
+    var col = s.color || (s.red ? '#D64532' : '#78909C');
+    var line = new AMap.Polyline({path:path, strokeColor:col, strokeWeight:4.5, strokeOpacity:0.9, strokeStyle: s.red ? 'solid' : (s.color ? 'solid' : 'dashed'), lineJoin:'round', zIndex:80, bubble:true});
     map.add(line); routeOvs.push(line); s._line = line;
     var el = document.createElement('div');
-    el.className='lbl'; el.style.borderColor = s.red ? '#D64532' : '#78909C';
+    el.className='lbl'; el.style.borderColor = col;
     el.style.fontSize='11.5px'; el.style.fontWeight='700';
-    el.style.color = s.red ? '#B03A28' : '#546E7A';
+    el.style.color = col;
     el.textContent = s.txt;
     var mid = path[Math.floor(path.length/2)];
-    var mk = new AMap.Marker({position:mid, content:el, anchor:'center', offset:new AMap.Pixel(0,-16), zIndex:95});
+    var idx = ROUTE_SEGS.indexOf(s);
+    var mpos = segLblPos[idx] || mid;
+    var mk = new AMap.Marker({position:mpos, content:el, anchor:'center', offset:new AMap.Pixel(0,-16), zIndex:96, draggable:true, cursor:'move'});
     map.add(mk); routeOvs.push(mk); s._lbl = mk;
+    (function(ii){
+      mk.on('dragend', function(){
+        var ll = mk.getPosition();
+        segLblPos[ii] = [+ll.lng.toFixed(6), +ll.lat.toFixed(6)];
+        try{ localStorage.setItem(SEGLBL_KEY, JSON.stringify(segLblPos)); }catch(e){}
+        hint('里程标签已移动（位置已保存）');
+      });
+    })(idx);
   });
   ROUTE_CITIES.forEach(function(c){
     var el = document.createElement('div');
